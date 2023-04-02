@@ -13,3 +13,7 @@
 16195	29604	1680283514788639053	libs/imgui/CMakeFiles/imgui.dir/src/imgui_widgets.cpp.o	11fdcb278292c3fb
 29604	29997	1680283515172636587	libs/imgui/libimgui.a	21cb271106725483
 29997	30351	1680283515536634250	/home/pedja/Desktop/projekat_grafika/project_base	784c27b52222afb8
+10	2931	1680441360859680860	CMakeFiles/project_base.dir/src/main.cpp.o	f0802fbf14039e32
+2931	3147	1680441361075682697	/home/pedja/Desktop/projekat_grafika/project_base	784c27b52222afb8
+59	5482	1680441510789504203	CMakeFiles/project_base.dir/src/main.cpp.o	f0802fbf14039e32
+5483	5774	1680441511081499484	/home/pedja/Desktop/projekat_grafika/project_base	784c27b52222afb8
