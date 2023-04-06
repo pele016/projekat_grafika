@@ -1,0 +1,14 @@
+# Blender 3.4.1 MTL File: 'None'
+# www.blender.org
+
+newmtl sh_catWorkBoot
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd sh_catWorkBoot_albedo.jpg
+map_Ns sh_catWorkBoot_rough.jpg
+map_refl sh_catWorkBoot_ao.jpg
+map_Bump -bm 1.000000 sh_catWorkBoot_nrm.jpg
