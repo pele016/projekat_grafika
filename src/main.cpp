@@ -28,6 +28,8 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 
 unsigned int loadCubemap(vector<std::string> faces);
 
+unsigned int loadTexture(char const *path);
+
 // settings
 const unsigned int SCR_WIDTH = 1920;
 const unsigned int SCR_HEIGHT = 1080;
@@ -60,7 +62,6 @@ struct ProgramState {
     Camera camera;
     bool CameraMouseMovementUpdateEnabled = true;
     glm::vec3 backpackPosition = glm::vec3(0.0f);
-    float backpackScale = 1.0f;
     PointLight pointLight;
     ProgramState()
             : camera(glm::vec3(0.0f, 0.0f, 3.0f)) {}
@@ -139,9 +140,6 @@ int main() {
         return -1;
     }
 
-    // ----------------------------------------------obrce teksture-----------------------------------------------------
-    //stbi_set_flip_vertically_on_load(true);
-
     programState = new ProgramState;
     programState->LoadFromFile("resources/program_state.txt");
     if (programState->ImGuiEnabled) {
@@ -161,15 +159,19 @@ int main() {
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
+    //face culling enable
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
 
     // ----------------------------------------------------build and compile shaders------------------------------------
     //main shader
     Shader ourShader("resources/shaders/ourShader.vs", "resources/shaders/ourShader.fs");
     //sky shader
     Shader skyShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
+    //money shader
+    Shader moneyShader("resources/shaders/money.vs", "resources/shaders/money.fs");
 
-
-    //------------------------------------------------------------------------------------------------------------------
+    //-----------------------------------------------------------------------------------------------------------------
     //-----------------------------------------------------load models--------------------------------------------------
     //hallway
     Model hallwayModel("resources/objects/hallway/Hallway.obj");
@@ -223,6 +225,30 @@ int main() {
             -1.0f, -1.0f,  1.0f,
             1.0f, -1.0f,  1.0f
     };
+
+    //------------------------------------money vertices----------------------------------------------------------------
+    float transparentVertices[] = {
+            // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
+            0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+            0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+            1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+
+            0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+            1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+            1.0f,  0.5f,  0.0f,  1.0f,  0.0f
+    };
+
+    //money positions
+    vector<glm::vec3> moneyPositions;
+    for(int i =0;i<150;i++){
+        moneyPositions.push_back(glm::vec3(rand()%10 - 5.0f,0.1f,rand()%45 - 20.0f));
+    }
+    //money rotations
+    vector<float> moneyRotations;
+    for(int i =0;i<50;i++){
+        moneyRotations.push_back(rand()%180);
+    }
+    //------------------------------------------------------------------------------------------------------------------
     //___________________________________________skybox VAO____________________________________________________
     unsigned int skyboxVAO, skyboxVBO;
     glGenVertexArrays(1, &skyboxVAO);
@@ -247,17 +273,31 @@ int main() {
 
     skyShader.use();
     skyShader.setInt("skybox", 0);
-    //------------------------------------------------------------------------------------------------------------------------------
-
-    //------------------------------------------------------podesavanje svetla------------------------------------------------------
+    //------------------------------------------------------------------------------------------------------------------
+    //--------------------------------------------money VAO-------------------------------------------------------------
+    unsigned int transparentVAO, transparentVBO;
+    glGenVertexArrays(1, &transparentVAO);
+    glGenBuffers(1, &transparentVBO);
+    glBindVertexArray(transparentVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, transparentVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), transparentVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+    //Load textures
+    unsigned int moneyTexture = loadTexture(FileSystem::getPath("resources/textures/money.png").c_str());
+    //------------------------------------------------------------------------------------------------------------------
+    //------------------------------------------------------podesavanje svetla------------------------------------------
     PointLight& pointLight = programState->pointLight;
     pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
     pointLight.ambient = glm::vec3(0.1, 0.1, 0.1);
     pointLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
     pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
-    pointLight.constant = 1.0f;
-    pointLight.linear = 0.09f;
-    pointLight.quadratic = 0.032f;
+    pointLight.constant = 0.8f;
+    pointLight.linear = 0.1f;
+    pointLight.quadratic = 0.1f;
     //------------------------------------------------------------------------------------------------------------------------------
     //---------------------------------------------------------render loop----------------------------------------------------------
     while (!glfwWindowShouldClose(window)) {
@@ -271,7 +311,6 @@ int main() {
         // -----
         processInput(window);
 
-
         // render
         // ------
         glClearColor(programState->clearColor.r, programState->clearColor.g, programState->clearColor.b, 1.0f);
@@ -279,16 +318,6 @@ int main() {
 
         // don't forget to enable shader before setting uniforms
         ourShader.use();
-        pointLight.position = glm::vec3(4.0 * cos(currentFrame), 4.0f, 4.0 * sin(currentFrame));
-        ourShader.setVec3("pointLight.position", pointLight.position);
-        ourShader.setVec3("pointLight.ambient", pointLight.ambient);
-        ourShader.setVec3("pointLight.diffuse", pointLight.diffuse);
-        ourShader.setVec3("pointLight.specular", pointLight.specular);
-        ourShader.setFloat("pointLight.constant", pointLight.constant);
-        ourShader.setFloat("pointLight.linear", pointLight.linear);
-        ourShader.setFloat("pointLight.quadratic", pointLight.quadratic);
-        ourShader.setVec3("viewPosition", programState->camera.Position);
-        ourShader.setFloat("material.shininess", 32.0f);
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom),
                                                 (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
@@ -296,14 +325,37 @@ int main() {
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
 
-        //Ovde preko shadera iscrtavamo objekte
-
+        ourShader.setVec3("viewPosition", programState->camera.Position);
+        ourShader.setFloat("material.shininess", 32.0f);
+        //pointlight 1
+        ourShader.setVec3("pointLights[0].position", glm::vec3(0.0f,3.6f,6.6f));
+        ourShader.setVec3("pointLights[0].ambient", pointLight.ambient);
+        ourShader.setVec3("pointLights[0].diffuse", pointLight.diffuse);
+        ourShader.setVec3("pointLights[0].specular", pointLight.specular);
+        ourShader.setFloat("pointLights[0].constant", pointLight.constant);
+        ourShader.setFloat("pointLights[0].linear", pointLight.linear);
+        ourShader.setFloat("pointLights[0].quadratic", pointLight.quadratic);
+        //pointlight 2
+        ourShader.setVec3("pointLights[1].position", glm::vec3(0.0f,2.6f,0.1f));
+        ourShader.setVec3("pointLights[1].ambient", pointLight.ambient);
+        ourShader.setVec3("pointLights[1].diffuse", pointLight.diffuse);
+        ourShader.setVec3("pointLights[1].specular", pointLight.specular);
+        ourShader.setFloat("pointLights[1].constant", pointLight.constant);
+        ourShader.setFloat("pointLights[1].linear", pointLight.linear);
+        ourShader.setFloat("pointLights[1].quadratic", pointLight.quadratic);
+        //pointlight 3
+        ourShader.setVec3("pointLights[2].position", glm::vec3(0.0f,2.6f,-6.5f));
+        ourShader.setVec3("pointLights[2].ambient", pointLight.ambient);
+        ourShader.setVec3("pointLights[2].diffuse", pointLight.diffuse);
+        ourShader.setVec3("pointLights[2].specular", pointLight.specular);
+        ourShader.setFloat("pointLights[2].constant", pointLight.constant);
+        ourShader.setFloat("pointLights[2].linear", pointLight.linear);
+        ourShader.setFloat("pointLights[2].quadratic", pointLight.quadratic);
+        // -------------------------------------------------------------------------------------------------------------
+        // -----------------------------------Ovde preko shadera iscrtavamo objekte-------------------------------------
         //crtaj hallway
         glm::mat4 modelHallway = glm::mat4(1.0f);
         modelHallway = glm::scale(modelHallway, glm::vec3(1.5f));
-        //modelHallway = glm::rotate(modelHallway,glm::radians(programState->vecRotate.x), glm::vec3(1.0f ,0.0f, 0.0f));
-        //modelHallway = glm::rotate(modelHallway,glm::radians(programState->vecRotate.y), glm::vec3(0.0f ,1.0f, 0.0f));
-        //modelHallway = glm::rotate(modelHallway,glm::radians(programState->vecRotate.z), glm::vec3(0.0f ,0.0f, 1.0f));
         ourShader.setMat4("model", modelHallway);
         hallwayModel.Draw(ourShader);
 
@@ -314,6 +366,25 @@ int main() {
         modelBoot = glm::rotate(modelBoot,glm::radians(currentFrame*40.0f), glm::vec3(0.0f ,1.0f, 0.0f));
         ourShader.setMat4("model", modelBoot);
         bootModel.Draw(ourShader);
+        // -------------------------------------------------------------------------------------------------------------
+        // --------------------------------------------money drawing----------------------------------------------------
+        moneyShader.use();
+        glm::mat4 modelMoney = glm::mat4(1.0f);
+        moneyShader.setMat4("projection", projection);
+        moneyShader.setMat4("view", view);
+        glBindVertexArray(transparentVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, moneyTexture);
+        for (unsigned int i = 0; i < 150; i++)
+        {
+            modelMoney = glm::mat4(1.0f);
+            modelMoney = glm::scale(modelMoney, glm::vec3(0.5f));
+            modelMoney = glm::translate(modelMoney, moneyPositions[i]);
+            modelMoney = glm::rotate(modelMoney,glm::radians(-90.0f), glm::vec3(1.0f ,0.0f, 0.0f));
+            modelMoney = glm::rotate(modelMoney,glm::radians(moneyRotations[i]), glm::vec3(0.0f ,0.0f, 1.0f));
+            moneyShader.setMat4("model", modelMoney);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
         // -------------------------------------------------------------------------------------------------------------
         //______________________________________draw sky________________________________________________________________
         glDepthFunc(GL_LEQUAL);
@@ -350,8 +421,6 @@ int main() {
     return 0;
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -365,17 +434,9 @@ void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         programState->camera.ProcessKeyboard(RIGHT, deltaTime);
 }
-
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-    // make sure the viewport matches the new window dimensions; note that width and
-    // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
-
-// glfw: whenever the mouse moves, this callback is called
-// -------------------------------------------------------
 void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     if (firstMouse) {
         lastX = xpos;
@@ -384,7 +445,7 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     }
 
     float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+    float yoffset = lastY - ypos;
 
     lastX = xpos;
     lastY = ypos;
@@ -392,13 +453,9 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     if (programState->CameraMouseMovementUpdateEnabled)
         programState->camera.ProcessMouseMovement(xoffset, yoffset);
 }
-
-// glfw: whenever the mouse scroll wheel scrolls, this callback is called
-// ----------------------------------------------------------------------
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
     programState->camera.ProcessMouseScroll(yoffset);
 }
-
 void DrawImGui(ProgramState *programState) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -406,12 +463,8 @@ void DrawImGui(ProgramState *programState) {
 
     {
         static float f = 0.0f;
-        ImGui::Begin("Hello window");
-        ImGui::Text("Hello text");
-        ImGui::SliderFloat("Float slider", &f, 0.0, 1.0);
-        ImGui::ColorEdit3("Background color", (float *) &programState->clearColor);
-        ImGui::DragFloat3("Backpack position", (float*)&programState->backpackPosition);
-        ImGui::DragFloat("Backpack scale", &programState->backpackScale, 0.05, 0.1, 4.0);
+        ImGui::Begin("lights settings");
+        ImGui::Text("settings for lights components");
 
         ImGui::DragFloat("pointLight.constant", &programState->pointLight.constant, 0.05, 0.0, 1.0);
         ImGui::DragFloat("pointLight.linear", &programState->pointLight.linear, 0.05, 0.0, 1.0);
@@ -471,6 +524,42 @@ unsigned int loadCubemap(vector<std::string> faces)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
+}
+unsigned int loadTexture(char const *path)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
 
     return textureID;
 }

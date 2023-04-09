@@ -19,11 +19,14 @@ struct Material {
 
     float shininess;
 };
+
+#define NR_POINT_LIGHTS 3
+
 in vec2 TexCoords;
 in vec3 Normal;
 in vec3 FragPos;
 
-uniform PointLight pointLight;
+uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform Material material;
 
 uniform vec3 viewPosition;
@@ -35,7 +38,8 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     float diff = max(dot(normal, lightDir), 0.0);
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
     // attenuation
     float distance = length(light.position - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
@@ -53,6 +57,8 @@ void main()
 {
     vec3 normal = normalize(Normal);
     vec3 viewDir = normalize(viewPosition - FragPos);
-    vec3 result = CalcPointLight(pointLight, normal, FragPos, viewDir);
+    vec3 result = CalcPointLight(pointLights[0], normal, FragPos, viewDir);
+    for(int i = 1; i < NR_POINT_LIGHTS; i++)
+            result += CalcPointLight(pointLights[i], normal, FragPos, viewDir);
     FragColor = vec4(result, 1.0);
 }
