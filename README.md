@@ -9,3 +9,14 @@ Prazan projekat sa pratećim bibliotekama koje koristimo na času.
 5. Zaglavlja (h i hpp) fajlovi idu u include
 6. Šejderi idu u folder shaders. `Vertex shader` ima ekstenziju `.vs`, `fragment shader` ima ekstenziju `.fs`
 7. ALT+SHIFT+F10 -> project_base -> run
+
+# Instrukcije
+ `f1` otvara meni za podesavanje svetala
+ `w` `s` `d` `a` koristimo za kretanja
+ 
+# Implementirane oblasti
+ sve teme do 8. nedelje
+ Blending(Discard)
+ Face culling
+ Blin-Fong advanced lighting
+ Cubemaps - SkyBox
