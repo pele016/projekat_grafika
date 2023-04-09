@@ -1,6 +1,3 @@
-# project_base
-Prazan projekat sa pratećim bibliotekama koje koristimo na času. 
-
 # Uputstvo
 1. `git clone https://github.com/matf-racunarska-grafika/project_base.git`
 2. CLion -> Open -> path/to/my/project_base
@@ -15,8 +12,8 @@ Prazan projekat sa pratećim bibliotekama koje koristimo na času.
  `w` `s` `d` `a` koristimo za kretanja
  
 # Implementirane oblasti
- sve teme do 8. nedelje
- Blending(Discard)
- Face culling
- Blin-Fong advanced lighting
- Cubemaps - SkyBox
+ - sve teme do 8. nedelje
+ - Blending(Discard)
+ - Face culling
+ - Blin-Fong advanced lighting
+ - Cubemaps - SkyBox
