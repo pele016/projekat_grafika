@@ -10,7 +10,11 @@
 # Instrukcije
  `f1` otvara meni za podesavanje svetala
  `w` `s` `d` `a` koristimo za kretanja
+ `esc` za prekidanje programa
  
+# Link za video projekta
+  https://drive.google.com/drive/folders/1Vas4EVpn0HgtZruJ05j4Z3rtDdrFmQts?usp=share_link
+
 # Implementirane oblasti
  - sve teme do 8. nedelje
  - Blending(Discard)
